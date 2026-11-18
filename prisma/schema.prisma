@@ -1,0 +1,54 @@
+// This is the initial FinSight schema.
+// Phase 1 establishes User and Organization as the foundation.
+//
+// Planned Phase 2+ entities:
+//   - Order          (internal order records)
+//   - Payment        (payment records linked to orders)
+//   - Settlement     (provider settlement files)
+//   - Refund         (refund records)
+//   - Reconciliation (reconciliation run per settlement)
+//   - ReconciliationItem (per-row match/mismatch result)
+//   - Transaction    (normalized transaction ledger)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  ANALYST
+  VIEWER
+}
+
+model User {
+  id             String       @id @default(cuid())
+  email          String       @unique
+  passwordHash   String
+  firstName      String
+  lastName       String
+  role           UserRole     @default(ANALYST)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([email])
+  @@index([organizationId])
+  @@map("users")
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("organizations")
+}
